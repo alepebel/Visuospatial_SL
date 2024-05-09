@@ -143,7 +143,7 @@ monitor_features = {}
 monitor_features['monitor'] = mon
 monitor_features['units'] = 'cm' # units to define your stimuli
 monitor_features['screen_id'] = 0 # 1 when using a extended display 
-monitor_features['full']  = True
+monitor_features['full']  = False
 monitor_features['Hz'] =  60 #'auto' #144 #60 this can be set to "auto" to estimate the refreshing rate of the monitor, although it can fail often
 res =  expInfo['monitor']['monitor_pixels']
 monitor_features['resolution'] = res
@@ -170,7 +170,7 @@ ring = visual.Circle(win,radius=st_prop['radius'],pos=[0,0],edges = 60, lineColo
 
 
 stim_HC = visual.Circle(win,radius=st_prop['size_CUE'] ,pos=[0,0],fillColor=[1,1,1],units= "deg")
-stim_LC = visual.Circle(win,radius=st_prop['size_CUE'],pos=[0,0],fillColor=[0.45,0.45,0.45],units= "deg")
+stim_LC = visual.Circle(win,radius=st_prop['size_CUE'],pos=[0,0],fillColor=[0.35,0.35,0.35],units= "deg")
 
 # Circular grating
 radialGrating = visual.RadialStim(win, tex='sinXsin', color=0.45, size=st_prop['size_CUE']*2, radialCycles=4, angularCycles=0,
@@ -193,7 +193,7 @@ nblocks = 8
 
 if subj_id == 'test':
     nTrials = 10 # number of trials
-    nblocks = 1
+    nblocks = 2
 
 
 mouse=event.Mouse(win=win,visible=False)
@@ -217,7 +217,7 @@ filepeye = resultspath +'/'+ filepeye
 
 # variables recorded
 cnames = ['subj','trial','block', 'delay','fix','trial_seq',
-'last_stim_pairpos','dev_ID', 'dev_angle', 'dev_pairpos' , 'dev_times',  'devRT','keypressed',
+'last_stim_pairpos','dev_ID', 'dev_angle', 'dev_pairpos' , 'dev_times',  'devRT',
 'radious','T_Angle','resp_mod',
 'choice_x','choice_y',  'choiceAngle','choiceR','wmRT','movTime',
 'm_pos_x','m_pos_y','m_clock']
@@ -255,8 +255,6 @@ def circdist(angles1,angles2):
 
 
 cond_resps = ['drag']
-prior_kappa = 2 # kappa for the von mises distribution
-
  
 main_exp  = {}
 main_exp['nblocks']     = nblocks # 4 # totaltime = 90 * 6 * 5
@@ -276,7 +274,6 @@ if subj_id == 'test':
     main_exp['trial_reps']  = 8 # 8 * 2 delays = 16
     sst = False
 
-
 # Initiating parallel port
 if sst: 
     p_port = serial.Serial('COM3', 115200, timeout = 0 )
@@ -285,9 +282,7 @@ if sst:
     p_port.write(b'RR')
 
 
-
 win.mouseVisible = False 
-
 
 if subj_id == 'test':
     instr.main_instructions(win)
@@ -368,12 +363,12 @@ for thisBlock in range(main_exp['nblocks']): # iterate over blocks
             trialClockStart = Clock.getTime() 
             # starting trial sequence presentation
             for istim, pos_angle in enumerate(stim_oris):
-
+                rt = np.array([None])
                 # mapping orientation in x y coordinates
                 xstim,ystim = exp.toCar(st_prop['radius'] ,pos_angle)  # 1.5 corrects for the different in radius between the cue and the ring
                 # plotting deviant target or distractor
                 if np.isin(istim, deviants):
-                    stim_ID = radialGrating
+                    stim_ID = stim_HC #radialGrating
                 else:
                     stim_ID = stim_LC
 
@@ -502,7 +497,7 @@ for thisBlock in range(main_exp['nblocks']): # iterate over blocks
                 eyes_stamps.append(tr.get_system_time_stamp()) # response init time stamp
             
             if kfix == True:
-                while (mouse.getPressed()[0]==0) and (keypressed == None ): # and frameN in range(RESPONSE_MAX)):
+                while (mouse.getPressed()[0]==0): # and frameN in range(RESPONSE_MAX)):
                     keys = kb.getKeys(keyList = ['space'], waitRelease=True, clear=True)
                     for thisKey in keys:
                         keypressed = thisKey.name
@@ -583,8 +578,8 @@ for thisBlock in range(main_exp['nblocks']): # iterate over blocks
             routines(False)
                             
             
-            trial_data = [subj_id, n_trial,thisBlock, t_delay ,kfix, trials[n_trial], last_stim, 
-                        deviants, deviant_angles, deviant_pos, deviant_times,  rt, keypressed,
+            trial_data = [subj_id, n_trial,thisBlock, t_delay ,kfix, trials[n_trial].tolist(), last_stim, 
+                        deviants.tolist(), deviant_angles, deviant_pos, deviant_times.tolist(),  rt.tolist(), 
                         r_T,angle_T,resp_mod,
                         choice_pos[0],choice_pos[1],
                         choice_ang,choice_r,
@@ -616,29 +611,11 @@ for thisBlock in range(main_exp['nblocks']): # iterate over blocks
                 if kfix == True:
                   #  ring.draw()
                     resp.draw()
-                    if ct == True:
-                        if keypressed == 'space':
-                            msgTex=visual.TextStim(win=win, ori=0,
-                            text= 'Detected',
-                            pos=[0,-2], height=1,
-                            color='green',units="cm")
-                            msgTex.draw()
-                        else:
-                            msgText=visual.TextStim(win=win, ori=0,
-                            text= 'Not detected',
-                            pos=[0,-2], height=1,
-                            color='red',units="cm").draw()
-                    if ct == False:
-                        if keypressed == 'space':
-                            msgText=visual.TextStim(win=win, ori=0,
-                            text= 'Detection error',
-                            pos=[0,-2], height=1,
-                            color='green',units="cm").draw()
-                        else:
-                            msgText=visual.TextStim(win=win, ori=0,
-                            text= abs_err_angle,
-                            pos=[0,-2], height=1.5,
-                            color=col_fb,units="cm").draw()
+                    
+                    msgText=visual.TextStim(win=win, ori=0,
+                    text= abs_err_angle,
+                    pos=[0,-2], height=1.5,
+                    color=col_fb,units="cm").draw()
                 
                 else:
                     msgText=visual.TextStim(win=win, ori=0,

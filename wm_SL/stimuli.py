@@ -6,7 +6,7 @@ def stim_config(ifi):
     # Experiment timings design
     
     stim = {}
-    stim['CUE_time'] = 150 # in miliseconds
+    stim['CUE_time'] = 250 # in miliseconds
     stim['CUE_frames'] = round(stim['CUE_time']/ifi)
     stim['FP'] = round(750/ifi) # fixation  + circle + resp_options
     stim['FEEDBACK_frames'] = round(500/ifi)
